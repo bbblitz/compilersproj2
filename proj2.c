@@ -14,6 +14,7 @@ Aggelos Varvitsiotis.
 
 /*	define syntax tree node and pointer type	*/
 #include <stdio.h>
+#include <stdlib.h>//Needed for malloc
 #include "proj2.h"
 
 ILTree dummy = { DUMMYNode, 0, 0, 0, 0 };
