@@ -149,8 +149,219 @@ Expression_l : LBRACnum Expression RBRACnum{
 		$$ = MakeTree(BoundOp,$4,$2);
 	     };
 
-/*TODO:Pick up here*/
-MethodDecl : 
+/*TODO:what should idnode be? How do we set type up?*/
+MethodDecl : METHODnum VOIDnum IDENTIFIERnum LPARENnum FormalParameterList RPARENnum Block {
+		$$ = MakeTree( 	MethodOp,
+				MakeTree( 	HeadOp,
+						MakeLeaf(IDNode,0),
+						$5
+					),
+				$8
+				);
+	}
+	   | METHODnum Type IDENTIFIERnum LPARENnum FormalParameterList RPARENnum Block {
+	   $$ = MakeTree( 	MethodOp,
+	   			MakeTree( HeadOp,
+					  MakeLeaf(IDNode,0),
+					  $5,
+					),
+				$8
+			);
+}
+	   | METHODnum VOIDnum IDENTIFIERnum LPARENnum RPARENnum Block{ 
+	   $$ = MakeTree( 	MethodOp,
+	   			MakeTree( HeadOp,
+					  MakeLeaf(IDNode,0),
+					  NullExp(),
+					),
+				$8
+			);
+}
+	   | METHODnum Type IDENTIFIERnum LPARENnum RPARENnum Block {
+		$$ = MakeTree( 	MethodOp,
+	   			MakeTree( HeadOp,
+					  MakeLeaf(IDNode,0),
+					  NullExp(),
+					),
+				$8
+			);
+};
+
+/*TODO:Make a global type so it can be used here*/
+FormalParameterList : FormalParameter_l{
+		    $$ = MakeTree(SpecOp,$1,global_type);
+		    };
+/*TODO:How do I know if it should be an r arg type or varg type?*/
+FormalParameter_l : FormalParameter 
+		  | FormalParameter SEMInum FormalParameter_l {
+		  	$$ = MakeTree(RArgTypeOp, $1, $2);
+};
+
+FormalParameter : VALnum INTnum IDENTIFIERnum Identifier_l{
+			$$ = MakeTree(CommaOp,IDNode,INTEGERT);
+		}
+		| INTnum IDENTIFIERnum Identifier_l{
+			$$ = MakeTree(CommaOp, IDNode, INTEGERT);
+		};
+
+Identifier_l : COMMAnum IDENTIFIERnum
+	     | Identifier_l COMMAnum IDENTIFIERnum
+
+Block : Decls StatementList{
+      	$$ = MakeTree(BodyOp,$1,$2);
+      }
+      | StatementList{
+     	$$ = MakeTree(BodyOp,NullExp(),$2); 
+      };
+
+/*TODO:This is totally wrong, fix it*/
+Type : IDENTIFIERnum
+     | IDENTIFIERnum BracSet
+     | INTnum 
+     | INTnum BracSet 
+
+StatementList: LBRACEnum Statement Statement_l RBRACEnum{
+	     $$ = MakeTree(StmtOp,$3,$2);
+	     }
+	     | LBRACEnum Statement RBRACEnum{
+	     $$ = MakeTree(StmtOp,NullExp(),$2);
+	     };
+
+Statement_l : Statement{
+	    $$ = MakeTree(StmtOp,NullExp(),$1);
+	    }
+	    | Statement Statement_l{
+	    $$ = MakeTree(StmtOp,$2,$1);
+	    };
+
+Statement : AssignmentStatement { $$ = $1;}
+	  | MethodCallStatement { $$ = $1;}
+	  | ReturnStatement 	{ $$ = $1;}
+	  | IfStatement 	{ $$ = $1;}
+	  | WhileStatement 	{ $$ = $1;}
+	  | /*Empty*/ ;
+
+AssignmentStatement : Variable ASSIGNnum Expression{
+		    $$ = MakeTree( 	AssignOp,
+		    			MakeTree(AssignOp,NullExp(),$1),
+					$3);
+};
+
+MethodCallStatement : Variable LPARENnum Expression_s RPARENnum{
+	$$ = MakeTree(RoutineCallOp,$1,$3);
+		    }
+		    | Variable LPARENnum RPARENnum{
+		    $$ = MakeTree(RoutineCallOp,$1,NullExp());
+		    };
+
+Expression_s : Expression{
+	     $$ = MakeTree(CommaOp,$1,NullExp());
+	     | Expression DOTnum Expression_s{
+	     $$ = MakeTree(CommaOp,$1,$3);
+	     };
+
+ReturnStatement : RETURNnum Expression{
+		$$ = MakeTree(ReturnOp,$2,NullExp());
+		| RETURNnum{
+		$$ = MakeTree(ReturnOp,NullExp(),NullExp());
+		};
+
+/*TODO:How in the world is this supposed to work? Where is  statmentlist go?*/
+IfStatement : IFnum Expression StatementList {
+	    $$ = MakeTree(CommaOp,$2,$3);
+	    }
+	    | IFnum Expression StatementList ELSE StatementList{
+	    $$ = MakeTree(IfElseOp,
+	    		  MakeTree(IfElseOp,
+			           NullExp()
+				   MakeTree(CommaOp,$2,$3)
+				   )
+			  $5);
+	    };
+	    | IFnum Expression StatementList ELSE IfStatement{
+	    $$ = MakeTree(IfElseOp,
+	    		  $5,
+			  MakeTree(CommaOp,$2,$3)
+			  );
+	    };
+
+WhileStatement : WHILEnum Expression StatementList {
+	       $$ = MakeTree(LoopOp,$2,$3);
+	       };
+
+/*TODO:What should LTnum be if we don't have a rhs?*/
+Expression : SimpleExpression{
+	   $$ = MakeTree(0,$1,NullExp());
+	   }
+	   | SimpleExpression GTnum SimpleExpression{
+	   $$ = MakeTree(LTOp,$1,$3);
+	   }
+	   | SimpleExpression GEnum SimpleExpression{
+	   $$ = MakeTree(LEOp,$1,$3);
+	   }
+	   | SimpleExpression EQnum SimpleExpression{
+	   $$ = MakeTree(EQOp,$1,$3);
+	   }
+	   | SimpleExpression NEnum SimpleExpression{
+	   $$ = MakeTree(NEOp,$1,$3);
+	   }
+	   | SimpleExpression GEnum SimpleExpression{
+	   $$ = MakeTree(GEOp,$1,$3);
+	   }
+	   | SimpleExpression GTnum SimpleExpression{
+	   $$ = MakeTree(GTOp,$1,$3);
+	   };
+
+/*How do they fit into this tree? TODO:Complete this
+I hope I don't have to do the same cursor thing I did before, that was a pain
+*/
+SimpleExpression : Unary SEPost_l
+		 | SEPre Term
+
+Unary : PLUSnum Term{
+      $$ = $2;
+      }
+      | MINUSnum Term{
+      $$ = MakeTree(UnaryNegOp,$2,NullExp();
+      }
+      | Term{
+      $$ = $1
+      };
+/*TODO:Same with this, do I have to build the three then set it's stuff up?*/
+Term : Factor 
+
+Factor : UnassignedConstant 		{ $$ = $1; }
+       | Variable 			{ $$ = $1; }
+       | MethodCallStatement 		{ $$ = $1; }
+       | LPARENnum Expression RPARENnum { $$ = $1; }
+       | NOTnum Factor 			{ $$ = $1; };
+
+/*TODO:The documentation says that these are tokens, but then the tree should be a subtree? What?*/
+UnassignedConstant : INTEGERT
+		   | STRINGT
+
+Variable : IDENTIFIERnum {
+	 $$ = MakeTree(FieldOp,IDNode,NullExp());
+	 }
+	 | IDENTIFIERnum Variable_s_l{
+	 $$ = MakeTree(VarOp,IDNode,$2);
+	 };
+
+Variable_s_l : Variable_s {
+	     $$ = $1
+	     }
+	     | Variable_s Variable_s_l{
+	     $$ = MakeTree(IndexOp,$1,$2);
+	     };
+
+Variable_s : Variable_expr 	{$$ = $1;}
+	   | Variable_iden 	{$$ = $1;};
+
+/*TODO: These are pobably wrong, but variables are confuseing :( */
+Variable_expr : LBRACnum Expression_l RBRACnum { $$ = $2;};
+
+Variable_iden : DOTnum IDENTIFIERnum { $$ = NullExp(); };
+	 
 
 /*other rules*/
 Expresssion : SimpleExpression {$$ = $1;}
