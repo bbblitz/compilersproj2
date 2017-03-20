@@ -5,22 +5,41 @@ TODO:Test
 */
 %{/*definition*/
 #include "proj2.h"
+#include "token.h"
 #include <stdio.h>
+
+extern int yycolumn yyline yylval
 %}
 %token <intg> PROGRAMnum IDnum SCONSTnum
 /*Try to keep this alphabetical to make it easy to find things*/
 %type <tptr> ArrayInitializer ArrayCreationExpression
-%type <tptr> ClassDecl ClassDecl_l
+%type <tptr> AssignmentStatement
+%type <tptr> Block
+%type <tptr> ClassDecl ClassDecl_l ClassBody
 %type <tptr> Decls 
-%type <tptr> Expression Expression_l 
-%type <tptr> FieldDecl, FieldDecl_l FieldDecl_chunk
+%type <tptr> Expression Expression_l Expression_s
+%type <tptr> Factor
+%type <tptr> FieldDecl FieldDecl_l FieldDecl_chunk
+%type <tptr> FormalParameterList FormalParameter_l FormalParameter
+%type <tptr> IfStatement
 %type <tptr> MethodDecl MethodDecl_l
-%type <tptr> VariableInit Variable VariableDeclId VariableInitializer VariableInitializer_l 
+%type <tptr> MethodCallStatement
+%type <tptr> Program
+%type <tptr> ReturnStatement
+%type <tptr> SimpleExpression
+%type <tptr> StatementList Statement Statement_l
+%type <tptr> Term
+%type <tptr> Unary UnassignedConstant
+%type <tptr> VariableInit Variable VariableDeclId VariableInitializer VariableInitializer_l Variable_s_l Variable_s Variable_expr Variable_iden 
+%type <tptr> WhileStatement
+/* These were in the example
 %type <tptr> Program SimpleExpression Comp op
 ClassBody
+*/
 %% /*yacc specification */
+/*TODO:The 0 in makeleaf should be idnum sumhow*/
 Program : PROGRAMnum IDnum SEMInum ClassDecl_l{
-	$$ = MakeTree(ProgramOp, $4, MakeLeaf(IDNode, $2));
+	$$ = MakeTree(ProgramOp, $4, MakeLeaf(IDNode, 0));
 	printtree($$,0);
 };
 
@@ -139,7 +158,7 @@ VariableInitializer_l : VariableInitializer{
 
 /*What is INTEGERT? (right subtree of the root for ArrayCreationExpressions)*/
 ArrayCreationExpression : INTnum Expression_l {
-				$$ = MakeTree(ArrayTypeOp,$2,MakeLeaf(IntegerOp,$1));
+				$$ = MakeTree(ArrayTypeOp,$2,MakeLeaf(IntegerOp,NullExp()));
 			};
 
 Expression_l : LBRACnum Expression RBRACnum{
@@ -156,7 +175,7 @@ MethodDecl : METHODnum VOIDnum IDENTIFIERnum LPARENnum FormalParameterList RPARE
 						MakeLeaf(IDNode,0),
 						$5
 					),
-				$8
+				$7
 				);
 	}
 	   | METHODnum Type IDENTIFIERnum LPARENnum FormalParameterList RPARENnum Block {
@@ -165,7 +184,7 @@ MethodDecl : METHODnum VOIDnum IDENTIFIERnum LPARENnum FormalParameterList RPARE
 					  MakeLeaf(IDNode,0),
 					  $5,
 					),
-				$8
+				$7
 			);
 }
 	   | METHODnum VOIDnum IDENTIFIERnum LPARENnum RPARENnum Block{ 
@@ -174,7 +193,7 @@ MethodDecl : METHODnum VOIDnum IDENTIFIERnum LPARENnum FormalParameterList RPARE
 					  MakeLeaf(IDNode,0),
 					  NullExp(),
 					),
-				$8
+				$6
 			);
 }
 	   | METHODnum Type IDENTIFIERnum LPARENnum RPARENnum Block {
@@ -183,7 +202,7 @@ MethodDecl : METHODnum VOIDnum IDENTIFIERnum LPARENnum FormalParameterList RPARE
 					  MakeLeaf(IDNode,0),
 					  NullExp(),
 					),
-				$8
+				$6
 			);
 };
 
@@ -194,7 +213,7 @@ FormalParameterList : FormalParameter_l{
 /*TODO:How do I know if it should be an r arg type or varg type?*/
 FormalParameter_l : FormalParameter 
 		  | FormalParameter SEMInum FormalParameter_l {
-		  	$$ = MakeTree(RArgTypeOp, $1, $2);
+		  	$$ = MakeTree(RArgTypeOp, $1, $3);
 };
 
 FormalParameter : VALnum INTnum IDENTIFIERnum Identifier_l{
@@ -211,7 +230,7 @@ Block : Decls StatementList{
       	$$ = MakeTree(BodyOp,$1,$2);
       }
       | StatementList{
-     	$$ = MakeTree(BodyOp,NullExp(),$2); 
+     	$$ = MakeTree(BodyOp,NullExp(),$1); 
       };
 
 /*TODO:This is totally wrong, fix it*/
@@ -239,16 +258,14 @@ Statement : AssignmentStatement { $$ = $1;}
 	  | ReturnStatement 	{ $$ = $1;}
 	  | IfStatement 	{ $$ = $1;}
 	  | WhileStatement 	{ $$ = $1;}
-	  | /*Empty*/ ;
+	  | /*Empty*/ 		{ $$ = NullExp();};
 
 AssignmentStatement : Variable ASSIGNnum Expression{
-		    $$ = MakeTree( 	AssignOp,
-		    			MakeTree(AssignOp,NullExp(),$1),
-					$3);
+		    $$ = MakeTree(AssignOp,MakeTree(AssignOp,NullExp(),$1),$3);
 };
 
 MethodCallStatement : Variable LPARENnum Expression_s RPARENnum{
-	$$ = MakeTree(RoutineCallOp,$1,$3);
+		    $$ = MakeTree(RoutineCallOp,$1,$3);
 		    }
 		    | Variable LPARENnum RPARENnum{
 		    $$ = MakeTree(RoutineCallOp,$1,NullExp());
@@ -256,37 +273,50 @@ MethodCallStatement : Variable LPARENnum Expression_s RPARENnum{
 
 Expression_s : Expression{
 	     $$ = MakeTree(CommaOp,$1,NullExp());
+	     }
 	     | Expression DOTnum Expression_s{
 	     $$ = MakeTree(CommaOp,$1,$3);
 	     };
 
 ReturnStatement : RETURNnum Expression{
 		$$ = MakeTree(ReturnOp,$2,NullExp());
+		}
 		| RETURNnum{
 		$$ = MakeTree(ReturnOp,NullExp(),NullExp());
 		};
 
 /*TODO:How in the world is this supposed to work? Where is  statmentlist go?*/
 IfStatement : IFnum Expression StatementList {
-	    $$ = MakeTree(CommaOp,$2,$3);
+	    $$ = NullExp();
+	    /*Temporarily comment out to try to make it compile
+	    MakeTree(CommaOp,$2,$3);
+	    */
 	    }
 	    | IFnum Expression StatementList ELSE StatementList{
-	    $$ = MakeTree(IfElseOp,
+	    $$ = NullExp();
+	    /*MakeTree(IfElseOp,
 	    		  MakeTree(IfElseOp,
 			           NullExp()
 				   MakeTree(CommaOp,$2,$3)
-				   )
-			  $5);
-	    };
+				   ),
+			  $5)
+	Temporarily comment out to try to get it to compile*/
+	    }
 	    | IFnum Expression StatementList ELSE IfStatement{
+	    $$ = NullExp();
+	    /*Temporarily comment out to try to make it compile
 	    $$ = MakeTree(IfElseOp,
 	    		  $5,
 			  MakeTree(CommaOp,$2,$3)
 			  );
+	    */
 	    };
 
 WhileStatement : WHILEnum Expression StatementList {
+	       $$ = NullExp();
+	       /*Temporarily comment out to try to make it compile
 	       $$ = MakeTree(LoopOp,$2,$3);
+	       */
 	       };
 
 /*TODO:What should LTnum be if we don't have a rhs?*/
@@ -315,8 +345,12 @@ Expression : SimpleExpression{
 /*How do they fit into this tree? TODO:Complete this
 I hope I don't have to do the same cursor thing I did before, that was a pain
 */
-SimpleExpression : Unary SEPost_l
-		 | SEPre Term
+SimpleExpression : Unary SEPost_l{
+		 $$ = NullExp();
+		 }
+		 | SEPre Term{
+		 $$ = NullExp();
+		 };
 
 Unary : PLUSnum Term{
       $$ = $2;
@@ -328,17 +362,17 @@ Unary : PLUSnum Term{
       $$ = $1
       };
 /*TODO:Same with this, do I have to build the three then set it's stuff up?*/
-Term : Factor 
+Term : Factor {$$ = $1;};
 
 Factor : UnassignedConstant 		{ $$ = $1; }
        | Variable 			{ $$ = $1; }
        | MethodCallStatement 		{ $$ = $1; }
-       | LPARENnum Expression RPARENnum { $$ = $1; }
-       | NOTnum Factor 			{ $$ = $1; };
+       | LPARENnum Expression RPARENnum { $$ = $2; }
+       | NOTnum Factor 			{ $$ = $2; };
 
 /*TODO:The documentation says that these are tokens, but then the tree should be a subtree? What?*/
-UnassignedConstant : INTEGERT
-		   | STRINGT
+UnassignedConstant : INTEGERT {$$ = NullExp();}
+		   | STRINGT  {$$ = NullExp();};
 
 Variable : IDENTIFIERnum {
 	 $$ = MakeTree(FieldOp,IDNode,NullExp());
@@ -364,9 +398,11 @@ Variable_iden : DOTnum IDENTIFIERnum { $$ = NullExp(); };
 	 
 
 /*other rules*/
+/* This was in the example given to us
 Expresssion : SimpleExpression {$$ = $1;}
 	    | SimpleExpression Comp op SimpleExpression
 	    	{MkLeftC($1,$2); $$ = MkRightC($3, $2);}
+*/
 %%
 int yycolumn yyline;
 FILE* treelst;

@@ -1,11 +1,9 @@
 
 CFLAGS=-g
 
-lex.yy.c:
+all: clean
 	lex lexer.l
-
-y.tab.c:
 	yacc grammer.y
 
-all: 
-	yacc grammer.y
+clean:
+	rm lex.yy.c
