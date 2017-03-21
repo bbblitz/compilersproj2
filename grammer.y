@@ -4,13 +4,20 @@ TODO:Finish
 TODO:Test
 */
 %{/*definition*/
-#include "proj2.h"
-#include "token.h"
-#include <stdio.h>
+include "proj2.h"
+//include "token.h"
+include <stdio.h>
 
 extern int yycolumn yyline yylval
 %}
-%token <intg> PROGRAMnum IDnum SCONSTnum
+/*Token definitions originally in token.h
+ *Not alphabetized in case order matters for automatic numbering*/
+%token <intg> ANDnum ASSGNnum DECLARATIONSnum DOTnum ENDDECLARATIONSnum EQUALnum GTnum IDnum INTnum LBRACnum LPARENnum METHODnum NEnum ORnum PROGRAMnum RBRACnum RPARENnum SEMInum VALnum WHILEnum CLASSnum COMMAnum DIVIDEnum ELSEnum EQnum GEnum ICONSTnum IFnum LBRACEnum LEnum LTnum MINUSnum NOTnum PLUSnum RBRACEnum RETURNnum SCONSTnum TIMESnum VOIDnum EOFnum
+
+/*The "not so sure about this" tokens, just so it'll compile*/
+%token <intg> STRINGT INTEGERT ELSE SEPre SEPost_l
+/*Especially not sure what SEPre means*/
+
 /*Try to keep this alphabetical to make it easy to find things*/
 %type <tptr> ArrayInitializer ArrayCreationExpression
 %type <tptr> AssignmentStatement
@@ -32,6 +39,16 @@ extern int yycolumn yyline yylval
 %type <tptr> Unary UnassignedConstant
 %type <tptr> VariableInit Variable VariableDeclId VariableInitializer VariableInitializer_l Variable_s_l Variable_s Variable_expr Variable_iden 
 %type <tptr> WhileStatement
+
+/*Edits to rules:
+ *changed "IDENTIFIERnum" to "IDnum" assuming the former meant to say the latter
+ *same deal with "ASSIGNnum" to "ASSGNnum"
+ *and "DELCLARATIONSnum" to "DECLARATIONSnum"
+ *"VariableDecId" to "VariableDeclId"
+ *"VaribleInitalizer" to "VariableInitializer"
+ *"VaribleInit" to "VariableInit"
+ *"EQUALSnum" to "EQUALnum"*/
+
 /* These were in the example
 %type <tptr> Program SimpleExpression Comp op
 ClassBody
@@ -87,10 +104,10 @@ MethodDecl_l : MethodDecl {
 	     	$$ = MakeTree(BodyOp,$1,$2);
 	     };
 
-Decls : DELCLARATIONSnum FieldDecl_l ENDDECLARATIONSnum{
+Decls : DECLARATIONSnum FieldDecl_l ENDDECLARATIONSnum{
 	$$ = MakeTree(BodyOp,$2,
       }
-      | DELCLARATIONSnum ENDDECLARATIONSnum{
+      | DECLARATIONSnum ENDDECLARATIONSnum{
 
       };
 
@@ -106,27 +123,27 @@ FieldDecl : Type FieldDecl_chunk SEMInum{
 	  };
 
 /*TODO:Fill this one in*/
-FieldDecl_chunk : VariableDecId{
+FieldDecl_chunk : VariableDeclId{
 			$$ = NullExp();
 		}
-		| VariableDecId COMMAnum FieldDecl_chunk{
+		| VariableDeclId COMMAnum FieldDecl_chunk{
 			$$ = NullExp();
 		}
-		| VaribleInit{
+		| VariableInit{
 			$$ = NullExp();
 		}
 		| VariableInit COMMAnum FieldDecl_chunk{
 			$$ = NullExp();
 		};
 /*TODO:This one too*/
-VariableInit : VariableDecId EQUALSnum VaribleInitalizer{
+VariableInit : VariableDeclId EQUALnum VariableInitializer{
 	     	$$ = NullExp();
 	};
 
-VariableDeclId : IDENTIFIERnum {
+VariableDeclId : IDnum {
 	       	$$ = MakeTree(IDNode,NullExp(),NullExp());
 	       }
-	       | IDENTIFIERnum BracSet{
+	       | IDnum BracSet{
 	       	$$ = MakeTree(IDNode,NullExp(),NullExp());
 	       };
 
@@ -169,7 +186,7 @@ Expression_l : LBRACnum Expression RBRACnum{
 	     };
 
 /*TODO:what should idnode be? How do we set type up?*/
-MethodDecl : METHODnum VOIDnum IDENTIFIERnum LPARENnum FormalParameterList RPARENnum Block {
+MethodDecl : METHODnum VOIDnum IDnum LPARENnum FormalParameterList RPARENnum Block {
 		$$ = MakeTree( 	MethodOp,
 				MakeTree( 	HeadOp,
 						MakeLeaf(IDNode,0),
@@ -178,7 +195,7 @@ MethodDecl : METHODnum VOIDnum IDENTIFIERnum LPARENnum FormalParameterList RPARE
 				$7
 				);
 	}
-	   | METHODnum Type IDENTIFIERnum LPARENnum FormalParameterList RPARENnum Block {
+	   | METHODnum Type IDnum LPARENnum FormalParameterList RPARENnum Block {
 	   $$ = MakeTree( 	MethodOp,
 	   			MakeTree( HeadOp,
 					  MakeLeaf(IDNode,0),
@@ -187,7 +204,7 @@ MethodDecl : METHODnum VOIDnum IDENTIFIERnum LPARENnum FormalParameterList RPARE
 				$7
 			);
 }
-	   | METHODnum VOIDnum IDENTIFIERnum LPARENnum RPARENnum Block{ 
+	   | METHODnum VOIDnum IDnum LPARENnum RPARENnum Block{
 	   $$ = MakeTree( 	MethodOp,
 	   			MakeTree( HeadOp,
 					  MakeLeaf(IDNode,0),
@@ -196,7 +213,7 @@ MethodDecl : METHODnum VOIDnum IDENTIFIERnum LPARENnum FormalParameterList RPARE
 				$6
 			);
 }
-	   | METHODnum Type IDENTIFIERnum LPARENnum RPARENnum Block {
+	   | METHODnum Type IDnum LPARENnum RPARENnum Block {
 		$$ = MakeTree( 	MethodOp,
 	   			MakeTree( HeadOp,
 					  MakeLeaf(IDNode,0),
@@ -216,15 +233,15 @@ FormalParameter_l : FormalParameter
 		  	$$ = MakeTree(RArgTypeOp, $1, $3);
 };
 
-FormalParameter : VALnum INTnum IDENTIFIERnum Identifier_l{
+FormalParameter : VALnum INTnum IDnum Identifier_l{
 			$$ = MakeTree(CommaOp,IDNode,INTEGERT);
 		}
-		| INTnum IDENTIFIERnum Identifier_l{
+		| INTnum IDnum Identifier_l{
 			$$ = MakeTree(CommaOp, IDNode, INTEGERT);
 		};
 
-Identifier_l : COMMAnum IDENTIFIERnum
-	     | Identifier_l COMMAnum IDENTIFIERnum
+Identifier_l : COMMAnum IDnum
+	     | Identifier_l COMMAnum IDnum
 
 Block : Decls StatementList{
       	$$ = MakeTree(BodyOp,$1,$2);
@@ -234,8 +251,8 @@ Block : Decls StatementList{
       };
 
 /*TODO:This is totally wrong, fix it*/
-Type : IDENTIFIERnum
-     | IDENTIFIERnum BracSet
+Type : IDnum
+     | IDnum BracSet
      | INTnum 
      | INTnum BracSet 
 
@@ -260,7 +277,7 @@ Statement : AssignmentStatement { $$ = $1;}
 	  | WhileStatement 	{ $$ = $1;}
 	  | /*Empty*/ 		{ $$ = NullExp();};
 
-AssignmentStatement : Variable ASSIGNnum Expression{
+AssignmentStatement : Variable ASSGNnum Expression{
 		    $$ = MakeTree(AssignOp,MakeTree(AssignOp,NullExp(),$1),$3);
 };
 
@@ -374,10 +391,10 @@ Factor : UnassignedConstant 		{ $$ = $1; }
 UnassignedConstant : INTEGERT {$$ = NullExp();}
 		   | STRINGT  {$$ = NullExp();};
 
-Variable : IDENTIFIERnum {
+Variable : IDnum {
 	 $$ = MakeTree(FieldOp,IDNode,NullExp());
 	 }
-	 | IDENTIFIERnum Variable_s_l{
+	 | IDnum Variable_s_l{
 	 $$ = MakeTree(VarOp,IDNode,$2);
 	 };
 
@@ -394,7 +411,7 @@ Variable_s : Variable_expr 	{$$ = $1;}
 /*TODO: These are pobably wrong, but variables are confuseing :( */
 Variable_expr : LBRACnum Expression_l RBRACnum { $$ = $2;};
 
-Variable_iden : DOTnum IDENTIFIERnum { $$ = NullExp(); };
+Variable_iden : DOTnum IDnum { $$ = NullExp(); };
 	 
 
 /*other rules*/
