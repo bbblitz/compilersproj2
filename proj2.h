@@ -75,17 +75,17 @@ typedef union
 tree NullExp();
 tree MakeLeaf(int, int);
 tree MakeTree(int, tree, tree);
-tree LeftChild(tree);
-tree RightChild(tree);
+/*tree LeftChild(tree);
+tree RightChild(tree);*/
 tree MkLeftC(tree, tree);
 tree MkRightC(tree, tree);
 tree MakeVal(tree);
-
+/*
 void SetNode(tree, tree);
 void SetNodeOp(tree, int);
 void SetLeftTreeOp(tree, int);
 void SetRightTreeOp(tree, int);
 void SetLeftChild(tree, tree);
-void SetRightChild(tree, tree); 
+void SetRightChild(tree, tree);*/ 
 
 
