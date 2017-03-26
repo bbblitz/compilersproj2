@@ -52,7 +52,7 @@
 
 
 /*Try to keep this alphabetical to make it easy to find things*/
-%type <tptr> ArrayCreationExpression ArrayCreationExpression_1 ArrayExpression ArrayInitializer ArrayCreationExpression ArrayInitializer_l
+%type <tptr> ArrayCreationExpression ArrayCreationExpression_1 ArrayExpression ArrayInitializer ArrayInitializer_l
 %type <tptr> AssignmentStatement
 %type <tptr> Block
 %type <tptr> ClassDecl ClassDecl_l ClassBody

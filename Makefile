@@ -7,3 +7,6 @@ y.tab.c:  grammer.y
 	yacc -v grammer.y
 lex.yy.c: lexer.l 
 	flex lexer.l
+
+clean:
+	rm lex.yy.c y.tab.c
