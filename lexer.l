@@ -2,12 +2,28 @@
 #include <stdlib.h>
 #include "token.h"
 
-extern int yycolumn, yylength, yyline, yylval;
+/* yyline = 1 for numbering lines 1 to n */
+int yyline = 1;
+int yycolumn = 0;
+int yylength = 0;
+YYSTYPE yylval;
 
-extern char *stringTable;
-extern int stringTableIndices[];
-extern int nStringsStored;
-extern int nCharsStored;
+/* the string table is one block separated by null terminators
+ * an int array stores the index of each string
+ * access the strings with pointer arithmetic */
+char *stringTable;
+int stringTableIndices[LIMIT2];
+int nStringsStored = 0;
+int nCharsStored = 0;
+
+//extern int yycolumn, yylength, yyline;
+extern YYSTYPE yylval;
+
+//I guess these don't need to be externed any more
+//extern char *stringTable;
+//extern int stringTableIndices[];
+//extern int nStringsStored;
+//extern int nCharsStored;
 
 /* functions */
 void ReportError(char *, int, int);
@@ -66,14 +82,16 @@ newline       [\n]
 "*"                               {yycolumn+=yyleng; return (TIMESnum);}
 [vV][oO][iI][dD]                  {yycolumn+=yyleng; return (VOIDnum);}
 
-'(.|[ \t])*'                      {RemoveQuotes(yytext); yylval = getStrTableIndex(yytext,yyline,yycolumn); yycolumn+=yyleng; return (SCONSTnum);}
+'(.|[ \t])*'                      {RemoveQuotes(yytext); yylval.intg = getStrTableIndex(yytext,yyline,yycolumn); yycolumn+=yyleng; return (SCONSTnum);}
 '(.|[ \t\n])*'                    {ReportError("string constant crosses line boundary",yyline,yycolumn); yyline++; yycolumn=0;}
-[1-9][0-9]*                       {yylval = atoi(yytext); yycolumn+=yyleng; return (ICONSTnum);}
+[1-9][0-9]*                       {yylval.intg = atoi(yytext); yycolumn+=yyleng; return (ICONSTnum);}
 [0-9][a-zA-Z0-9]*                 {ReportError("identifier starting with a digit",yyline,yycolumn); yycolumn+=yyleng;}
-[a-zA-Z][a-zA-Z0-9]*              {yylval = getStrTableIndex(yytext,yyline,yycolumn); yycolumn+=yyleng; return (IDnum);}
+[a-zA-Z][a-zA-Z0-9]*              {yylval.intg = getStrTableIndex(yytext,yyline,yycolumn); yycolumn+=yyleng; return (IDnum);}
 
 
 %%
+
+YYSTYPE yylval;
 
 void ReportError(char *message,int line, int column) {
     fprintf( stderr, "\nError at line %d, column %d (first char): %s\n\n", line, column, message);

@@ -214,6 +214,17 @@ int Op;
 		T->NodeOpType = Op;
 }
 
+tree MakeVal(T)
+tree T;
+{
+	if (IsNull(T) || NodeKind(T) != EXPRNode) {
+		return NULL;
+	}
+	SetNodeOp(T, VArgTypeOp);
+	MakeVal(RightChild(T));
+	return T;
+}
+
 /********************************************************
 *	This function sets the tree root and all its	*
 *	left subtree root to be a NewOp node, used only *
@@ -333,16 +344,17 @@ void zerocrosses ()
     crosses [i] = 0;
 }
 
-extern char  strg_tbl[];
+extern char  stringTable[];
 
 char* getname(int i)/*return ID name or String, i is the index of the string table, passed through yylval*/
 {
-  return( strg_tbl+i );/*return string table indexed at i*/
+	printf("I am trying to get name %d! I think it is %s",i,stringTable+i);
+  	return( stringTable+i );/*return string table indexed at i*/
 }
 
 char* getstring(int i)
 {
-  return( strg_tbl+i );/*return string table indexed at i*/
+  return( stringTable+i );/*return string table indexed at i*/
 }
 
 

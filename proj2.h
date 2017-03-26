@@ -79,6 +79,7 @@ tree LeftChild(tree);
 tree RightChild(tree);
 tree MkLeftC(tree, tree);
 tree MkRightC(tree, tree);
+tree MakeVal(tree);
 
 void SetNode(tree, tree);
 void SetNodeOp(tree, int);
