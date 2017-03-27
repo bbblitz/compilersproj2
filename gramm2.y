@@ -382,7 +382,7 @@ SimpleExpression : Term SimpleExpression_l_l {
 		   else $$ = MkLeftC($2, $3);
 	       } | MINUSnum Term SimpleExpression_l_l {
 		   if ($3 == NullExp()) $$ = MakeTree(UnaryNegOp, $2, NullExp());
-		   else $$ = MkLeftC(neg, $3);
+		   else $$ = MkLeftC(MakeTree(UnaryNegOp, $2, NullExp()), $3);
 	       };
 
 SimpleExpression_l_l : /* Empty */{
